@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Ready - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/animations.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/voicePrompts.js"></script>
+</head>
+<body>
+    <div class="exercise-prep">
+        <h2 id="exercise-name">Loading...</h2>
+        <div class="exercise-preview">
+            <img id="exercise-image" src="" alt="Exercise demonstration">
+        </div>
+        <div id="countdown">10</div>
+        <div class="exercise-info">
+            <p id="reps"></p>
+        </div>
+        <button onclick="skipCountdown()">Start Now</button>
+    </div>
+
+    <script src="js/exercises.js"></script>
+    <script src="js/workoutTracker.js"></script>
+    <script>
+        let timeLeft = 10;
+        const countdownEl = document.getElementById('countdown');
+        const exerciseName = localStorage.getItem('currentExercise');
+        let currentExercise;
+
+        window.onload = function() {
+            // Find exercise details
+            for (const category in exercises) {
+                for (const level in exercises[category]) {
+                    const found = exercises[category][level].find(ex => ex.name === exerciseName);
+                    if (found) {
+                        currentExercise = found;
+                        break;
+                    }
+                }
+                if (currentExercise) break;
+            }
+
+            if (currentExercise) {
+                document.getElementById('exercise-name').textContent = currentExercise.name;
+                document.getElementById('exercise-image').src = currentExercise.image;
+                document.getElementById('reps').textContent = 
+                    currentExercise.type === 'reps' ? 
+                    `Repetitions: ${currentExercise.reps}x` :
+                    `Duration: ${currentExercise.duration} seconds`;
+
+                // Add animations
+                UIAnimations.fadeIn(document.querySelector('.exercise-prep'));
+                UIAnimations.slideIn(document.querySelector('.exercise-preview'), 'top');
+
+                // Announce exercise instructions
+                voicePromptManager.speak(voicePromptManager.getExerciseInstructions(currentExercise));
+            }
+
+            // Initialize workout if not already started
+            const currentWorkout = localStorage.getItem('currentWorkout');
+            if (!currentWorkout) {
+                const tracker = new WorkoutTracker();
+                tracker.startWorkout();
+            }
+
+            // Animate countdown
+            UIAnimations.countUp(countdownEl, timeLeft);
+
+            // Play countdown sound
+            audioManager.playSound('countdown');
+        };
+        
+        const countdown = setInterval(() => {
+            timeLeft--;
+            countdownEl.textContent = timeLeft;
+            
+            // Voice countdown for last 3 seconds
+            voicePromptManager.speakCountdown(timeLeft);
+            
+            // Play tick sound for last 3 seconds
+            if (timeLeft <= 3) {
+                audioManager.playSound('tick');
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                audioManager.playSound('start');
+                setTimeout(() => {
+                    window.location.href = 'exercise.html';
+                }, 1000);
+            }
+        }, 1000);
+
+        function skipCountdown() {
+            clearInterval(countdown);
+            audioManager.stopAllSounds();
+            audioManager.playSound('start');
+            setTimeout(() => {
+                window.location.href = 'exercise.html';
+            }, 1000);
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="home-container">
+        <h1>Welcome to Your Fitness Journey</h1>
+        
+        <section id="recommended-exercises">
+            <h2>Recommended Exercises</h2>
+            <div class="exercise-grid" id="exercise-list">
+                <!-- Exercises will be populated here -->
+            </div>
+        </section>
+
+        <section id="weekly-calendar">
+            <h2>Weekly Calendar</h2>
+            <div class="calendar-grid">
+                <!-- Calendar will be populated here -->
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <button onclick="location.href='home.html'">Home</button>
+        <button onclick="location.href='report.html'">Report</button>
+        <button onclick="location.href='settings.html'">Settings</button>
+    </footer>
+
+    <script src="js/exercises.js"></script>
+    <script>
+        // Load user data from localStorage
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const goals = userData.goals || ['weightLoss'];
+        const fitnessLevel = userData.fitnessLevel || 'beginner';
+        const bmi = userData.bmi || 22;
+
+        // Get recommended exercises
+        const recommendedExercises = getRecommendedExercises(goals, fitnessLevel, bmi);
+
+        // Display exercises
+        const exerciseList = document.getElementById('exercise-list');
+        recommendedExercises.forEach(exercise => {
+            const exerciseCard = document.createElement('div');
+            exerciseCard.className = 'exercise-card';
+            exerciseCard.innerHTML = `
+                <img src="${exercise.image}" alt="${exercise.name}">
+                <h3>${exercise.name}</h3>
+                <p>${exercise.description}</p>
+                <div class="exercise-details">
+                    <span>${exercise.type === 'reps' ? exercise.reps + ' reps' : exercise.duration + 's'}</span>
+                    <span>${exercise.calories} cal</span>
+                </div>
+                <button onclick="startExercise('${exercise.name}')">Start</button>
+            `;
+            exerciseList.appendChild(exerciseCard);
+        });
+
+        function startExercise(exerciseName) {
+            // Store current exercise in localStorage
+            localStorage.setItem('currentExercise', exerciseName);
+            window.location.href = 'countdown.html';
+        }
+
+        // Initialize calendar
+        function initializeCalendar() {
+            const calendar = document.querySelector('.calendar-grid');
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+
+            days.forEach(day => {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.innerHTML = `
+                    <span class="day-name">${day}</span>
+                    <span class="workout-indicator"></span>
+                `;
+                calendar.appendChild(dayElement);
+            });
+        }
+
+        initializeCalendar();
+    </script>
+</body>
+</html> 

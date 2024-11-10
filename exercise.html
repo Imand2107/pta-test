@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/animations.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/voicePrompts.js"></script>
+</head>
+<body>
+    <div class="exercise-container">
+        <h2 id="exercise-name">Loading...</h2>
+        <div class="exercise-display">
+            <img id="exercise-image" src="" alt="Exercise demonstration">
+        </div>
+        <div id="counter">
+            <span id="count">0</span>
+            <span id="unit">reps</span>
+        </div>
+        <div class="controls">
+            <button onclick="previousExercise()">Previous</button>
+            <button onclick="skipExercise()">Skip</button>
+        </div>
+    </div>
+
+    <script src="js/exercises.js"></script>
+    <script src="js/workoutTracker.js"></script>
+    <script>
+        let currentExercise;
+        let isCountdownExercise;
+        let currentCount;
+        let timer;
+        const tracker = new WorkoutTracker();
+
+        window.onload = function() {
+            const exerciseName = localStorage.getItem('currentExercise');
+            
+            // Find exercise details
+            for (const category in exercises) {
+                for (const level in exercises[category]) {
+                    const found = exercises[category][level].find(ex => ex.name === exerciseName);
+                    if (found) {
+                        currentExercise = found;
+                        break;
+                    }
+                }
+                if (currentExercise) break;
+            }
+
+            if (currentExercise) {
+                document.getElementById('exercise-name').textContent = currentExercise.name;
+                document.getElementById('exercise-image').src = currentExercise.image;
+                
+                isCountdownExercise = currentExercise.type === 'countdown';
+                currentCount = isCountdownExercise ? currentExercise.duration : currentExercise.reps;
+                document.getElementById('count').textContent = currentCount;
+                document.getElementById('unit').textContent = isCountdownExercise ? 's' : 'reps';
+
+                UIAnimations.fadeIn(document.querySelector('.exercise-container'));
+                UIAnimations.slideIn(document.querySelector('.exercise-display'), 'right');
+                UIAnimations.countUp(document.getElementById('count'), currentCount);
+
+                if (isCountdownExercise) {
+                    startCountdown();
+                    voicePromptManager.speak("Begin exercise");
+                } else {
+                    voicePromptManager.speak(`Start ${currentExercise.reps} repetitions`);
+                }
+            }
+        };
+
+        function startCountdown() {
+            timer = setInterval(() => {
+                currentCount--;
+                document.getElementById('count').textContent = currentCount;
+                
+                if (currentCount <= 0) {
+                    clearInterval(timer);
+                    completeExercise();
+                }
+            }, 1000);
+        }
+
+        function completeExercise() {
+            audioManager.playSound('complete');
+            voicePromptManager.speakExerciseComplete();
+            const duration = isCountdownExercise ? currentExercise.duration : 30;
+            tracker.addExercise(currentExercise, currentExercise.reps, duration);
+            setTimeout(() => {
+                window.location.href = 'rest.html';
+            }, 1000);
+        }
+
+        function skipExercise() {
+            if (timer) clearInterval(timer);
+            completeExercise();
+        }
+
+        function previousExercise() {
+            if (timer) clearInterval(timer);
+            window.history.back();
+        }
+
+        // Handle keyboard input for rep counting
+        document.addEventListener('keydown', function(event) {
+            if (!isCountdownExercise && event.code === 'Space') {
+                currentCount--;
+                document.getElementById('count').textContent = currentCount;
+                UIAnimations.pulse(document.getElementById('counter'));
+                audioManager.playSound('tick');
+                
+                if (currentCount <= 5 && currentCount > 0) {
+                    voicePromptManager.speak(currentCount.toString());
+                } else if (currentCount <= 0) {
+                    completeExercise();
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/notifications.js"></script>
+</head>
+<body>
+    <div class="settings-container">
+        <h1>Settings</h1>
+        
+        <section id="general-settings">
+            <h2>General Settings</h2>
+            <form id="general-settings-form">
+                <div class="setting-group">
+                    <label>Theme</label>
+                    <select id="theme-select">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>Language</label>
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="it">Italiano</option>
+                        <option value="pt">Português</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>Workout Reminders</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="reminder-toggle">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="reminder-time" style="display: none;">
+                    <label>Reminder Time</label>
+                    <input type="time" id="reminder-time-input">
+                </div>
+
+                <div class="setting-group">
+                    <label>Background Music</label>
+                    <select id="music-select">
+                        <option value="none">None</option>
+                        <option value="workout1">Energetic Workout</option>
+                        <option value="workout2">Intense Workout</option>
+                        <option value="workout3">Chill Workout</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>Music Volume</label>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+                    <button id="mute-button" class="icon-button">
+                        🔊
+                    </button>
+                </div>
+
+                <div class="setting-group">
+                    <label>Voice Prompts</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="voice-toggle">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label>Voice Volume</label>
+                    <input type="range" id="voice-volume-slider" min="0" max="1" step="0.1" value="1">
+                </div>
+            </form>
+        </section>
+
+        <section id="workout-settings">
+            <h2>Workout Settings</h2>
+            <form id="workout-settings-form">
+                <div class="setting-group">
+                    <label>Rest Between Sets (seconds)</label>
+                    <input type="number" id="rest-duration" min="10" max="120" value="30">
+                </div>
+
+                <div class="setting-group">
+                    <label>Countdown Before Exercise (seconds)</label>
+                    <input type="number" id="countdown-duration" min="3" max="20" value="10">
+                </div>
+
+                <div class="setting-group">
+                    <label>Difficulty Level</label>
+                    <select id="difficulty-select">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+            </form>
+        </section>
+
+        <button id="save-settings" class="save-button">Save Settings</button>
+    </div>
+
+    <footer>
+        <button onclick="location.href='home.html'">Home</button>
+        <button onclick="location.href='report.html'">Report</button>
+        <button onclick="location.href='settings.html'">Settings</button>
+    </footer>
+
+    <script>
+        // Load existing settings from localStorage
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+            
+            // Set default values if not exists
+            const defaultSettings = {
+                theme: 'light',
+                language: 'en',
+                reminders: false,
+                reminderTime: '09:00',
+                restDuration: 30,
+                countdownDuration: 10,
+                difficultyLevel: 'beginner'
+            };
+
+            const finalSettings = { ...defaultSettings, ...settings };
+
+            // Apply settings to form elements
+            document.getElementById('theme-select').value = finalSettings.theme;
+            document.getElementById('language-select').value = finalSettings.language;
+            document.getElementById('reminder-toggle').checked = finalSettings.reminders;
+            document.getElementById('reminder-time-input').value = finalSettings.reminderTime;
+            document.getElementById('rest-duration').value = finalSettings.restDuration;
+            document.getElementById('countdown-duration').value = finalSettings.countdownDuration;
+            document.getElementById('difficulty-select').value = finalSettings.difficultyLevel;
+
+            // Show/hide reminder time based on toggle
+            document.getElementById('reminder-time').style.display = 
+                finalSettings.reminders ? 'block' : 'none';
+
+            // Apply theme
+            document.body.className = finalSettings.theme;
+
+            // Load voice settings
+            document.getElementById('voice-toggle').checked = 
+                localStorage.getItem('voicePromptsEnabled') !== 'false';
+            document.getElementById('voice-volume-slider').value = 
+                localStorage.getItem('voiceVolume') || 1;
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            const settings = {
+                theme: document.getElementById('theme-select').value,
+                language: document.getElementById('language-select').value,
+                reminders: document.getElementById('reminder-toggle').checked,
+                reminderTime: document.getElementById('reminder-time-input').value,
+                restDuration: document.getElementById('rest-duration').value,
+                countdownDuration: document.getElementById('countdown-duration').value,
+                difficultyLevel: document.getElementById('difficulty-select').value
+            };
+
+            localStorage.setItem('userSettings', JSON.stringify(settings));
+
+            // Handle workout reminders
+            if (settings.reminders) {
+                notificationManager.scheduleWorkoutReminder(settings.reminderTime);
+            } else {
+                notificationManager.cancelReminders();
+            }
+
+            // Apply theme immediately
+            document.body.className = settings.theme;
+
+            // Save voice settings
+            voicePromptManager.setEnabled(document.getElementById('voice-toggle').checked);
+            voicePromptManager.setVolume(parseFloat(document.getElementById('voice-volume-slider').value));
+
+            alert('Settings saved successfully!');
+        }
+
+        // Event Listeners
+        document.getElementById('reminder-toggle').addEventListener('change', function() {
+            document.getElementById('reminder-time').style.display = 
+                this.checked ? 'block' : 'none';
+        });
+
+        document.getElementById('save-settings').addEventListener('click', saveSettings);
+
+        // Load settings on page load
+        loadSettings();
+
+        // Add music controls
+        document.getElementById('music-select').addEventListener('change', function(e) {
+            const selectedTrack = e.target.value;
+            if (selectedTrack === 'none') {
+                audioManager.stopMusic();
+            } else {
+                audioManager.playMusic(selectedTrack);
+            }
+        });
+
+        document.getElementById('volume-slider').addEventListener('input', function(e) {
+            audioManager.setVolume(parseFloat(e.target.value));
+            updateMuteButton(e.target.value > 0);
+        });
+
+        document.getElementById('mute-button').addEventListener('click', function() {
+            const isMuted = audioManager.toggleMute();
+            updateMuteButton(isMuted);
+        });
+
+        function updateMuteButton(isMuted) {
+            document.getElementById('mute-button').textContent = isMuted ? '🔊' : '🔇';
+        }
+
+        document.getElementById('voice-toggle').addEventListener('change', function(e) {
+            voicePromptManager.setEnabled(e.target.checked);
+        });
+
+        document.getElementById('voice-volume-slider').addEventListener('input', function(e) {
+            voicePromptManager.setVolume(parseFloat(e.target.value));
+        });
+
+        document.getElementById('language-select').addEventListener('change', function(e) {
+            const language = e.target.value;
+            voicePromptManager.setLanguage(language);
+        });
+    </script>
+</body>
+</html> 

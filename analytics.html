@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/adminAnalytics.js"></script>
+    <script src="js/realTimeAnalytics.js"></script>
+</head>
+<body>
+    <div class="analytics-container">
+        <header class="analytics-header">
+            <h1>Analytics Dashboard</h1>
+            <div class="date-range">
+                <select id="time-range">
+                    <option value="day">Last 24 Hours</option>
+                    <option value="week">Last Week</option>
+                    <option value="month" selected>Last Month</option>
+                    <option value="year">Last Year</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Active Users</h3>
+                <div class="metric-values">
+                    <div class="metric-item">
+                        <span class="label">Daily</span>
+                        <span id="daily-active" class="value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Weekly</span>
+                        <span id="weekly-active" class="value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Monthly</span>
+                        <span id="monthly-active" class="value">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Workout Stats</h3>
+                <div class="metric-values">
+                    <div class="metric-item">
+                        <span class="label">Total Workouts</span>
+                        <span id="total-workouts" class="value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Avg Duration</span>
+                        <span id="avg-duration" class="value">0 min</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Total Calories</span>
+                        <span id="total-calories" class="value">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <h3>User Metrics</h3>
+                <div class="metric-values">
+                    <div class="metric-item">
+                        <span class="label">Total Users</span>
+                        <span id="total-users" class="value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">New Users</span>
+                        <span id="new-users" class="value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Retention Rate</span>
+                        <span id="retention-rate" class="value">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <h3>App Performance</h3>
+                <div class="metric-values">
+                    <div class="metric-item">
+                        <span class="label">Crashes</span>
+                        <span id="crashes" class="value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Avg Load Time</span>
+                        <span id="load-time" class="value">0s</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">Sync Success</span>
+                        <span id="sync-success" class="value">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="real-time-metrics">
+            <h2>Real-Time Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card real-time">
+                    <h3>Active Users</h3>
+                    <div class="real-time-value" id="rt-active-users">0</div>
+                    <div class="trend-indicator"></div>
+                </div>
+
+                <div class="metric-card real-time">
+                    <h3>Current Workouts</h3>
+                    <div class="real-time-value" id="rt-current-workouts">0</div>
+                    <div class="trend-indicator"></div>
+                </div>
+
+                <div class="metric-card real-time">
+                    <h3>Error Rate</h3>
+                    <div class="real-time-value" id="rt-error-rate">0%</div>
+                    <div class="trend-indicator"></div>
+                </div>
+
+                <div class="metric-card real-time">
+                    <h3>Server Status</h3>
+                    <div class="status-indicator" id="rt-server-status">Healthy</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>User Activity</h3>
+                <canvas id="activity-chart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Popular Exercises</h3>
+                <canvas id="exercises-chart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>User Growth</h3>
+                <canvas id="growth-chart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Workout Completion Rate</h3>
+                <canvas id="completion-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="data-tables">
+            <div class="table-card">
+                <h3>Recent User Activity</h3>
+                <div class="table-container" id="user-activity-table">
+                    <!-- Table will be populated dynamically -->
+                </div>
+            </div>
+
+            <div class="table-card">
+                <h3>Error Log</h3>
+                <div class="table-container" id="error-log-table">
+                    <!-- Table will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const analytics = new AdminAnalytics();
+        let charts = {};
+
+        async function updateDashboard() {
+            const metrics = await analytics.calculateMetrics();
+            
+            // Update metrics display
+            document.getElementById('daily-active').textContent = metrics.activeUsers.daily;
+            document.getElementById('weekly-active').textContent = metrics.activeUsers.weekly;
+            document.getElementById('monthly-active').textContent = metrics.activeUsers.monthly;
+            
+            document.getElementById('total-workouts').textContent = metrics.workoutMetrics.totalWorkouts;
+            document.getElementById('avg-duration').textContent = `${Math.round(metrics.workoutMetrics.averageDuration)} min`;
+            document.getElementById('total-calories').textContent = metrics.workoutMetrics.totalCalories;
+            
+            document.getElementById('total-users').textContent = metrics.userMetrics.totalUsers;
+            document.getElementById('new-users').textContent = metrics.userMetrics.newUsers;
+            document.getElementById('retention-rate').textContent = `${Math.round(metrics.userMetrics.retentionRate)}%`;
+            
+            document.getElementById('crashes').textContent = metrics.appMetrics.crashes;
+            document.getElementById('load-time').textContent = `${metrics.appMetrics.loadTime.toFixed(2)}s`;
+            document.getElementById('sync-success').textContent = `${Math.round(metrics.appMetrics.syncSuccess)}%`;
+
+            // Update charts
+            updateActivityChart(metrics);
+            updateExercisesChart(metrics);
+            updateGrowthChart(metrics);
+            updateCompletionChart(metrics);
+        }
+
+        function updateActivityChart(metrics) {
+            const ctx = document.getElementById('activity-chart').getContext('2d');
+            if (charts.activity) charts.activity.destroy();
+            
+            charts.activity = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Active Users',
+                        data: [
+                            metrics.activeUsers.daily,
+                            metrics.activeUsers.daily * 0.8,
+                            metrics.activeUsers.daily * 1.2,
+                            metrics.activeUsers.daily * 0.9,
+                            metrics.activeUsers.daily * 1.1,
+                            metrics.activeUsers.daily * 0.7,
+                            metrics.activeUsers.daily * 0.5
+                        ],
+                        borderColor: '#27ae60',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateExercisesChart(metrics) {
+            const ctx = document.getElementById('exercises-chart').getContext('2d');
+            if (charts.exercises) charts.exercises.destroy();
+            
+            const popularExercises = metrics.workoutMetrics.popularExercises;
+            charts.exercises = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: popularExercises.map(e => e.name),
+                    datasets: [{
+                        data: popularExercises.map(e => e.count),
+                        backgroundColor: [
+                            '#27ae60',
+                            '#2ecc71',
+                            '#3498db',
+                            '#e74c3c',
+                            '#f1c40f'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateGrowthChart(metrics) {
+            const ctx = document.getElementById('growth-chart').getContext('2d');
+            if (charts.growth) charts.growth.destroy();
+            
+            charts.growth = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'New Users',
+                        data: [
+                            metrics.userMetrics.newUsers * 0.4,
+                            metrics.userMetrics.newUsers * 0.3,
+                            metrics.userMetrics.newUsers * 0.2,
+                            metrics.userMetrics.newUsers * 0.1
+                        ],
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateCompletionChart(metrics) {
+            const ctx = document.getElementById('completion-chart').getContext('2d');
+            if (charts.completion) charts.completion.destroy();
+            
+            charts.completion = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Completed', 'Incomplete'],
+                    datasets: [{
+                        data: [
+                            metrics.userMetrics.completionRate,
+                            100 - metrics.userMetrics.completionRate
+                        ],
+                        backgroundColor: ['#27ae60', '#e74c3c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Update dashboard on load and when time range changes
+        window.onload = updateDashboard;
+        document.getElementById('time-range').addEventListener('change', updateDashboard);
+
+        // Update dashboard every 5 minutes
+        setInterval(updateDashboard, 5 * 60 * 1000);
+
+        // Setup real-time updates
+        function setupRealTimeMetrics() {
+            const previousValues = new Map();
+
+            function updateTrendIndicator(element, newValue, oldValue) {
+                const indicator = element.querySelector('.trend-indicator');
+                if (oldValue === undefined) return;
+
+                if (newValue > oldValue) {
+                    indicator.innerHTML = '↑';
+                    indicator.className = 'trend-indicator up';
+                } else if (newValue < oldValue) {
+                    indicator.innerHTML = '↓';
+                    indicator.className = 'trend-indicator down';
+                }
+            }
+
+            realTimeAnalytics.subscribe('activeUsers', value => {
+                const element = document.getElementById('rt-active-users');
+                updateTrendIndicator(element.parentElement, value, previousValues.get('activeUsers'));
+                element.textContent = value;
+                previousValues.set('activeUsers', value);
+            });
+
+            realTimeAnalytics.subscribe('currentWorkouts', value => {
+                const element = document.getElementById('rt-current-workouts');
+                updateTrendIndicator(element.parentElement, value, previousValues.get('currentWorkouts'));
+                element.textContent = value;
+                previousValues.set('currentWorkouts', value);
+            });
+
+            realTimeAnalytics.subscribe('errorRate', value => {
+                const element = document.getElementById('rt-error-rate');
+                updateTrendIndicator(element.parentElement, value, previousValues.get('errorRate'));
+                element.textContent = value.toFixed(2) + '%';
+                previousValues.set('errorRate', value);
+            });
+
+            realTimeAnalytics.subscribe('serverStatus', value => {
+                const element = document.getElementById('rt-server-status');
+                element.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+                element.className = `status-indicator ${value}`;
+            });
+        }
+
+        // Initialize real-time metrics
+        setupRealTimeMetrics();
+    </script>
+</body>
+</html> 

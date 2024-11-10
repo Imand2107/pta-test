@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achievements - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/animations.js"></script>
+    <script src="js/achievements.js"></script>
+    <script src="js/shareService.js"></script>
+</head>
+<body>
+    <div class="achievements-container">
+        <h1>Your Achievements</h1>
+
+        <div class="achievement-categories">
+            <div class="category-section" id="streak-achievements">
+                <h2>Workout Streaks</h2>
+                <div class="achievements-grid">
+                    <!-- Will be populated with streak achievements -->
+                </div>
+            </div>
+
+            <div class="category-section" id="workout-achievements">
+                <h2>Workout Milestones</h2>
+                <div class="achievements-grid">
+                    <!-- Will be populated with workout achievements -->
+                </div>
+            </div>
+
+            <div class="category-section" id="calorie-achievements">
+                <h2>Calorie Goals</h2>
+                <div class="achievements-grid">
+                    <!-- Will be populated with calorie achievements -->
+                </div>
+            </div>
+
+            <div class="category-section" id="variety-achievements">
+                <h2>Exercise Variety</h2>
+                <div class="achievements-grid">
+                    <!-- Will be populated with variety achievements -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <button onclick="location.href='home.html'">Home</button>
+        <button onclick="location.href='report.html'">Report</button>
+        <button onclick="location.href='settings.html'">Settings</button>
+    </footer>
+
+    <script>
+        function createAchievementCard(achievement, isUnlocked, progress) {
+            const card = document.createElement('div');
+            card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+            
+            card.innerHTML = `
+                <div class="achievement-icon">
+                    ${isUnlocked ? '🏆' : '🔒'}
+                </div>
+                <div class="achievement-info">
+                    <h3>${achievement.name}</h3>
+                    <p>${achievement.description}</p>
+                    ${!isUnlocked ? `
+                        <div class="progress-bar">
+                            <div class="progress" style="width: ${(progress / achievement.threshold) * 100}%"></div>
+                        </div>
+                        <span class="progress-text">${progress}/${achievement.threshold}</span>
+                    ` : `
+                        <button class="share-button" onclick="shareAchievement('${achievement.id}')">
+                            Share Achievement 🔗
+                        </button>
+                    `}
+                </div>
+            `;
+
+            return card;
+        }
+
+        async function shareAchievement(achievementId) {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userData = JSON.parse(localStorage.getItem(`userData_${currentUser.id}`));
+            
+            // Find achievement details
+            let achievement;
+            for (const category in achievementTracker.achievements) {
+                const found = achievementTracker.achievements[category].find(a => a.id === achievementId);
+                if (found) {
+                    achievement = found;
+                    break;
+                }
+            }
+
+            if (!achievement) return;
+
+            const stats = {
+                streak: userData.currentStreak || 0,
+                totalWorkouts: userData.totalWorkouts || 0,
+                totalCalories: userData.totalCalories || 0
+            };
+
+            const shared = await shareService.shareAchievement(achievement, stats);
+            if (shared) {
+                // Optionally show success message or animation
+                UIAnimations.pulse(event.target);
+            }
+        }
+
+        function displayAchievements() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userData = JSON.parse(localStorage.getItem(`userData_${currentUser.id}`));
+            const unlockedAchievements = new Set(userData.achievements || []);
+
+            // Display streak achievements
+            const streakSection = document.querySelector('#streak-achievements .achievements-grid');
+            achievementTracker.achievements.workoutStreak.forEach(achievement => {
+                const isUnlocked = unlockedAchievements.has(achievement.id);
+                const progress = userData.currentStreak || 0;
+                const card = createAchievementCard(achievement, isUnlocked, progress);
+                UIAnimations.fadeIn(card);
+                streakSection.appendChild(card);
+            });
+
+            // Display workout achievements
+            const workoutSection = document.querySelector('#workout-achievements .achievements-grid');
+            achievementTracker.achievements.totalWorkouts.forEach(achievement => {
+                const isUnlocked = unlockedAchievements.has(achievement.id);
+                const progress = userData.totalWorkouts || 0;
+                const card = createAchievementCard(achievement, isUnlocked, progress);
+                UIAnimations.fadeIn(card);
+                workoutSection.appendChild(card);
+            });
+
+            // Display calorie achievements
+            const calorieSection = document.querySelector('#calorie-achievements .achievements-grid');
+            achievementTracker.achievements.caloriesBurned.forEach(achievement => {
+                const isUnlocked = unlockedAchievements.has(achievement.id);
+                const progress = userData.totalCalories || 0;
+                const card = createAchievementCard(achievement, isUnlocked, progress);
+                UIAnimations.fadeIn(card);
+                calorieSection.appendChild(card);
+            });
+
+            // Display variety achievements
+            const varietySection = document.querySelector('#variety-achievements .achievements-grid');
+            achievementTracker.achievements.exerciseVariety.forEach(achievement => {
+                const isUnlocked = unlockedAchievements.has(achievement.id);
+                const progress = (userData.uniqueExercises || []).length;
+                const card = createAchievementCard(achievement, isUnlocked, progress);
+                UIAnimations.fadeIn(card);
+                varietySection.appendChild(card);
+            });
+        }
+
+        window.onload = displayAchievements;
+    </script>
+</body>
+</html> 

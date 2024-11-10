@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Your Goals - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Set Your Fitness Goals</h1>
+        <form id="goals-form" onsubmit="handleGoalsSubmit(event)">
+            <div class="goals-grid">
+                <label class="goal-option">
+                    <input type="checkbox" name="goals" value="weightLoss">
+                    <span class="goal-card">
+                        <h3>Weight Loss</h3>
+                        <p>Burn fat and improve overall fitness</p>
+                    </span>
+                </label>
+                
+                <label class="goal-option">
+                    <input type="checkbox" name="goals" value="muscleGain">
+                    <span class="goal-card">
+                        <h3>Muscle Gain</h3>
+                        <p>Build strength and muscle mass</p>
+                    </span>
+                </label>
+                
+                <label class="goal-option">
+                    <input type="checkbox" name="goals" value="endurance">
+                    <span class="goal-card">
+                        <h3>Improve Endurance</h3>
+                        <p>Increase stamina and cardiovascular health</p>
+                    </span>
+                </label>
+                
+                <label class="goal-option">
+                    <input type="checkbox" name="goals" value="flexibility">
+                    <span class="goal-card">
+                        <h3>Increase Flexibility</h3>
+                        <p>Enhance mobility and reduce injury risk</p>
+                    </span>
+                </label>
+            </div>
+
+            <div class="fitness-level">
+                <h3>Your Current Fitness Level</h3>
+                <select id="fitness-level" required>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+
+            <button type="submit">Save Goals</button>
+        </form>
+    </div>
+
+    <script>
+        // Check if user is logged in and has BMI data
+        window.onload = function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = JSON.parse(localStorage.getItem(`userData_${currentUser.id}`) || '{}');
+            if (!userData.bmi) {
+                window.location.href = 'bmi.html';
+            }
+        }
+
+        function handleGoalsSubmit(event) {
+            event.preventDefault();
+            
+            const goals = Array.from(document.getElementsByName('goals'))
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+
+            if (goals.length === 0) {
+                alert('Please select at least one goal');
+                return;
+            }
+
+            const fitnessLevel = document.getElementById('fitness-level').value;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userData = JSON.parse(localStorage.getItem(`userData_${currentUser.id}`) || '{}');
+
+            // Update user data with goals and fitness level
+            userData.goals = goals;
+            userData.fitnessLevel = fitnessLevel;
+            
+            localStorage.setItem(`userData_${currentUser.id}`, JSON.stringify(userData));
+
+            // Redirect to home page
+            window.location.href = 'home.html';
+        }
+    </script>
+</body>
+</html> 

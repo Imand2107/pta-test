@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "minVersion": "1.0.0",
+  "lastUpdated": "2024-01-20",
+  "features": [
+    "New exercise animations",
+    "Improved voice prompts",
+    "Multi-language support",
+    "Offline mode enhancements"
+  ],
+  "bugfixes": [
+    "Fixed workout tracking sync issues",
+    "Improved performance on older devices",
+    "Fixed notification scheduling"
+  ],
+  "changelog": {
+    "1.0.0": {
+      "date": "2024-01-20",
+      "changes": [
+        "Initial release",
+        "Basic workout functionality",
+        "Exercise tracking",
+        "Progress monitoring"
+      ]
+    }
+  },
+  "updateRequired": false,
+  "maintenanceMode": false,
+  "maintenanceMessage": ""
+} 

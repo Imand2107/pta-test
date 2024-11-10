@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-content">
+            <h1>You're Offline</h1>
+            <div class="offline-icon">📡</div>
+            <p>Please check your internet connection and try again.</p>
+            
+            <div class="offline-options">
+                <h2>While you're offline, you can:</h2>
+                <ul>
+                    <li>Continue your current workout if one is in progress</li>
+                    <li>View your saved workouts</li>
+                    <li>Check your achievements</li>
+                </ul>
+            </div>
+
+            <div class="offline-actions">
+                <button onclick="retryConnection()">Retry Connection</button>
+                <button onclick="showOfflineWorkouts()">View Saved Workouts</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="offline-workouts" class="offline-workouts" style="display: none;">
+        <h2>Saved Workouts</h2>
+        <div id="workout-list">
+            <!-- Will be populated with cached workouts -->
+        </div>
+    </div>
+
+    <script>
+        function retryConnection() {
+            window.location.reload();
+        }
+
+        function showOfflineWorkouts() {
+            const workoutList = document.getElementById('offline-workouts');
+            workoutList.style.display = 'block';
+            
+            // Load cached workouts from IndexedDB
+            const offlineStorage = new OfflineStorage();
+            offlineStorage.getAllData('workouts')
+                .then(workouts => {
+                    const list = document.getElementById('workout-list');
+                    if (workouts.length === 0) {
+                        list.innerHTML = '<p>No saved workouts available offline.</p>';
+                        return;
+                    }
+
+                    workouts.forEach(workout => {
+                        const workoutElement = document.createElement('div');
+                        workoutElement.className = 'offline-workout-item';
+                        workoutElement.innerHTML = `
+                            <h3>${workout.name}</h3>
+                            <p>Duration: ${workout.duration} minutes</p>
+                            <p>Exercises: ${workout.exercises.length}</p>
+                            <button onclick="startOfflineWorkout('${workout.id}')">
+                                Start Workout
+                            </button>
+                        `;
+                        list.appendChild(workoutElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading offline workouts:', error);
+                });
+        }
+
+        function startOfflineWorkout(workoutId) {
+            // Load workout from IndexedDB and start it
+            const offlineStorage = new OfflineStorage();
+            offlineStorage.getData('workouts', workoutId)
+                .then(workout => {
+                    if (workout) {
+                        localStorage.setItem('currentWorkout', JSON.stringify(workout));
+                        window.location.href = 'countdown.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting offline workout:', error);
+                });
+        }
+
+        // Check connection status periodically
+        setInterval(() => {
+            if (navigator.onLine) {
+                const shouldReload = confirm('You\'re back online! Would you like to reload the page?');
+                if (shouldReload) {
+                    window.location.reload();
+                }
+            }
+        }, 5000);
+    </script>
+</body>
+</html> 

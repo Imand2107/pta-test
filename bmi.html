@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Calculator - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Calculate Your BMI</h1>
+        <form id="bmi-form" onsubmit="handleBMISubmit(event)">
+            <input type="number" id="age" placeholder="Age" required>
+            <select id="gender" required>
+                <option value="" disabled selected>Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+            <input type="number" id="weight" placeholder="Weight (kg)" step="0.1" required>
+            <input type="number" id="height" placeholder="Height (cm)" required>
+            <button type="submit">Calculate BMI</button>
+        </form>
+        <div id="bmi-result" class="bmi-result"></div>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        window.onload = function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        function handleBMISubmit(event) {
+            event.preventDefault();
+            
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value) / 100; // Convert to meters
+            
+            const bmi = (weight / (height * height)).toFixed(2);
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            // Store user data
+            const userData = {
+                age,
+                gender,
+                currentWeight: weight,
+                height: height * 100, // Store in cm
+                bmi,
+                weightHistory: [{
+                    date: new Date().toISOString(),
+                    weight: weight
+                }]
+            };
+
+            // Save to localStorage with user-specific key
+            localStorage.setItem(`userData_${currentUser.id}`, JSON.stringify(userData));
+
+            // Display result with recommendation
+            const resultDiv = document.getElementById('bmi-result');
+            let message = `Your BMI is ${bmi}. `;
+            
+            if (bmi < 18.5) {
+                message += 'You are underweight. We recommend focusing on muscle gain and strength training.';
+            } else if (bmi >= 18.5 && bmi < 25) {
+                message += 'You have a healthy weight. We recommend a balanced workout routine.';
+            } else if (bmi >= 25 && bmi < 30) {
+                message += 'You are overweight. We recommend focusing on cardio and weight loss exercises.';
+            } else {
+                message += 'You are in the obese range. We recommend starting with low-impact exercises and consulting a healthcare provider.';
+            }
+
+            resultDiv.innerHTML = `
+                <p>${message}</p>
+                <button onclick="location.href='goalsSetting.html'" class="next-button">Set Your Goals</button>
+            `;
+        }
+    </script>
+</body>
+</html> 

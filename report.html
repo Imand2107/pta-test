@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="report-container">
+        <div class="user-profile">
+            <h2>Your Profile</h2>
+            <div class="profile-details">
+                <div class="profile-item">
+                    <span class="label">Name:</span>
+                    <span id="user-name">John Doe</span>
+                </div>
+                <div class="profile-item">
+                    <span class="label">Age:</span>
+                    <span id="user-age">25</span>
+                </div>
+                <div class="profile-item">
+                    <span class="label">Gender:</span>
+                    <span id="user-gender">Male</span>
+                </div>
+                <div class="profile-item">
+                    <span class="label">Current Weight:</span>
+                    <div class="weight-input">
+                        <input type="number" id="current-weight" step="0.1">
+                        <button onclick="updateWeight()">Update</button>
+                    </div>
+                </div>
+                <div class="profile-item">
+                    <span class="label">Height:</span>
+                    <span id="user-height">175 cm</span>
+                </div>
+                <div class="profile-item">
+                    <span class="label">Goals:</span>
+                    <span id="user-goals">Weight Loss, Muscle Gain</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <h3>Total Exercises</h3>
+                <span id="total-exercises">0</span>
+            </div>
+            <div class="stat-box">
+                <h3>Exercise Minutes</h3>
+                <span id="total-minutes">0</span>
+            </div>
+            <div class="stat-box">
+                <h3>Day Streak</h3>
+                <span id="day-streak">0</span>
+            </div>
+            <div class="stat-box">
+                <h3>Calories Burned</h3>
+                <span id="calories-burned">0</span>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-box">
+                <h3>Weight Progress</h3>
+                <canvas id="weightChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>Weekly Activity</h3>
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="workout-history">
+            <h3>Recent Workouts</h3>
+            <div id="workout-list">
+                <!-- Workout history will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <button onclick="location.href='home.html'">Home</button>
+        <button onclick="location.href='report.html'">Report</button>
+        <button onclick="location.href='settings.html'">Settings</button>
+    </footer>
+
+    <script>
+        // Load user data and update profile
+        function loadUserData() {
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            document.getElementById('user-name').textContent = userData.name || 'User';
+            document.getElementById('user-age').textContent = userData.age || '--';
+            document.getElementById('user-gender').textContent = userData.gender || '--';
+            document.getElementById('current-weight').value = userData.currentWeight || '';
+            document.getElementById('user-height').textContent = userData.height ? `${userData.height} cm` : '--';
+            document.getElementById('user-goals').textContent = (userData.goals || []).join(', ') || '--';
+        }
+
+        // Update weight and weight history
+        function updateWeight() {
+            const newWeight = document.getElementById('current-weight').value;
+            if (!newWeight) return;
+
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const weightHistory = userData.weightHistory || [];
+            
+            weightHistory.push({
+                date: new Date().toISOString(),
+                weight: parseFloat(newWeight)
+            });
+
+            userData.currentWeight = parseFloat(newWeight);
+            userData.weightHistory = weightHistory;
+            
+            localStorage.setItem('userData', JSON.stringify(userData));
+            updateWeightChart();
+        }
+
+        // Initialize weight progress chart
+        function initWeightChart() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const weightHistory = userData.weightHistory || [];
+
+            const labels = weightHistory.map(entry => 
+                new Date(entry.date).toLocaleDateString()
+            );
+            const weights = weightHistory.map(entry => entry.weight);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: weights,
+                        borderColor: '#27ae60',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize activity chart
+        function initActivityChart() {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            const workoutHistory = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            
+            // Get last 7 days
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+            const lastWeek = Array(7).fill(0);
+
+            workoutHistory.forEach(workout => {
+                const workoutDate = new Date(workout.date);
+                const dayDiff = Math.floor((today - workoutDate) / (1000 * 60 * 60 * 24));
+                if (dayDiff < 7) {
+                    lastWeek[6 - dayDiff] = workout.duration;
+                }
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Minutes',
+                        data: lastWeek,
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            const workoutHistory = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            
+            const totalExercises = workoutHistory.reduce((sum, workout) => sum + workout.exerciseCount, 0);
+            const totalMinutes = workoutHistory.reduce((sum, workout) => sum + workout.duration, 0);
+            const caloriesBurned = workoutHistory.reduce((sum, workout) => sum + workout.calories, 0);
+            
+            document.getElementById('total-exercises').textContent = totalExercises;
+            document.getElementById('total-minutes').textContent = totalMinutes;
+            document.getElementById('calories-burned').textContent = caloriesBurned;
+            
+            // Calculate streak
+            let streak = 0;
+            const today = new Date();
+            let checkDate = new Date(today);
+            
+            while (true) {
+                const workoutOnDate = workoutHistory.some(workout => {
+                    const workoutDate = new Date(workout.date);
+                    return workoutDate.toDateString() === checkDate.toDateString();
+                });
+                
+                if (!workoutOnDate) break;
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            
+            document.getElementById('day-streak').textContent = streak;
+        }
+
+        // Initialize page
+        window.onload = function() {
+            loadUserData();
+            initWeightChart();
+            initActivityChart();
+            updateStats();
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rest - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/audio.js"></script>
+    <script src="js/voicePrompts.js"></script>
+</head>
+<body>
+    <div class="rest-container">
+        <h2>Rest Time</h2>
+        <div id="rest-timer">30</div>
+        <div class="next-exercise">
+            <h3>Next Exercise:</h3>
+            <p id="next-exercise-name">Loading...</p>
+        </div>
+        <div class="controls">
+            <button onclick="adjustTime(-10)">-10s</button>
+            <button onclick="adjustTime(10)">+10s</button>
+            <button onclick="skipRest()">Skip Rest</button>
+        </div>
+    </div>
+
+    <script src="js/exercises.js"></script>
+    <script src="js/workoutTracker.js"></script>
+    <script>
+        let restTime = 30;
+        const timerEl = document.getElementById('rest-timer');
+        let timer;
+        
+        window.onload = function() {
+            // Get rest duration from settings
+            const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+            restTime = settings.restDuration || 30;
+            timerEl.textContent = restTime;
+            
+            // Show next exercise
+            const currentWorkout = JSON.parse(localStorage.getItem('currentWorkout') || '{}');
+            const exercises = currentWorkout.exercises || [];
+            
+            if (exercises.length < 8) { // Assuming 8 exercises per workout
+                const nextExercise = getNextExercise();
+                if (nextExercise) {
+                    document.getElementById('next-exercise-name').textContent = nextExercise.name;
+                    localStorage.setItem('currentExercise', nextExercise.name);
+                } else {
+                    // Workout complete
+                    const tracker = new WorkoutTracker();
+                    tracker.completeWorkout();
+                    window.location.href = 'completion.html';
+                    return;
+                }
+            } else {
+                // Workout complete
+                const tracker = new WorkoutTracker();
+                tracker.completeWorkout();
+                window.location.href = 'completion.html';
+                return;
+            }
+            
+            voicePromptManager.speakRestPeriod(restTime);
+            startTimer();
+            audioManager.playSound('rest');
+        };
+        
+        function startTimer() {
+            timer = setInterval(() => {
+                restTime--;
+                timerEl.textContent = restTime;
+                
+                // Voice countdown for last 3 seconds
+                if (restTime <= 3 && restTime > 0) {
+                    voicePromptManager.speakCountdown(restTime);
+                }
+                
+                if (restTime <= 0) {
+                    clearInterval(timer);
+                    window.location.href = 'exercise.html';
+                }
+            }, 1000);
+        }
+
+        function adjustTime(seconds) {
+            clearInterval(timer);
+            restTime = Math.max(0, restTime + seconds);
+            timerEl.textContent = restTime;
+            startTimer();
+        }
+
+        function skipRest() {
+            clearInterval(timer);
+            audioManager.stopAllSounds();
+            audioManager.playSound('start');
+            setTimeout(() => {
+                window.location.href = 'exercise.html';
+            }, 1000);
+        }
+
+        function getNextExercise() {
+            const currentWorkout = JSON.parse(localStorage.getItem('currentWorkout') || '{}');
+            const completedExercises = new Set(currentWorkout.exercises.map(ex => ex.name));
+            
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const recommendedExercises = getRecommendedExercises(
+                userData.goals || ['weightLoss'],
+                userData.fitnessLevel || 'beginner',
+                userData.bmi || 22
+            );
+            
+            return recommendedExercises.find(ex => !completedExercises.has(ex.name));
+        }
+    </script>
+</body>
+</html> 

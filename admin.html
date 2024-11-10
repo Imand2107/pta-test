@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/changelogManager.js"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Admin Panel</h1>
+        
+        <section class="version-management">
+            <h2>Version Management</h2>
+            <form id="version-form">
+                <div class="form-group">
+                    <label>Current Version</label>
+                    <input type="text" id="current-version" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>New Version</label>
+                    <input type="text" id="new-version" placeholder="x.x.x">
+                </div>
+
+                <div class="form-group">
+                    <label>Minimum Required Version</label>
+                    <input type="text" id="min-version" placeholder="x.x.x">
+                </div>
+
+                <div class="form-group">
+                    <label>New Features</label>
+                    <div id="features-list">
+                        <div class="feature-item">
+                            <input type="text" placeholder="New feature">
+                            <button type="button" onclick="removeFeature(this)">-</button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addFeature()">Add Feature</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Bug Fixes</label>
+                    <div id="bugfixes-list">
+                        <div class="bugfix-item">
+                            <input type="text" placeholder="Bug fix">
+                            <button type="button" onclick="removeBugfix(this)">-</button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addBugfix()">Add Bug Fix</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Force Update</label>
+                    <input type="checkbox" id="force-update">
+                </div>
+
+                <div class="form-group">
+                    <label>Maintenance Mode</label>
+                    <input type="checkbox" id="maintenance-mode">
+                </div>
+
+                <div class="form-group">
+                    <label>Maintenance Message</label>
+                    <textarea id="maintenance-message"></textarea>
+                </div>
+
+                <button type="submit" class="primary-button">Update Version</button>
+            </form>
+        </section>
+
+        <section class="version-history">
+            <h2>Version History</h2>
+            <div id="version-list">
+                <!-- Will be populated with version history -->
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Load current version info
+        window.onload = async function() {
+            try {
+                const response = await fetch('/version.json');
+                const versionData = await response.json();
+                
+                document.getElementById('current-version').value = versionData.version;
+                document.getElementById('min-version').value = versionData.minVersion;
+                document.getElementById('force-update').checked = versionData.updateRequired;
+                document.getElementById('maintenance-mode').checked = versionData.maintenanceMode;
+                document.getElementById('maintenance-message').value = versionData.maintenanceMessage;
+
+                // Load features
+                const featuresList = document.getElementById('features-list');
+                featuresList.innerHTML = '';
+                versionData.features.forEach(feature => {
+                    addFeature(feature);
+                });
+
+                // Load bugfixes
+                const bugfixesList = document.getElementById('bugfixes-list');
+                bugfixesList.innerHTML = '';
+                versionData.bugfixes.forEach(bugfix => {
+                    addBugfix(bugfix);
+                });
+
+                // Display version history
+                displayVersionHistory(versionData.changelog);
+            } catch (error) {
+                console.error('Error loading version data:', error);
+            }
+        };
+
+        function addFeature(text = '') {
+            const featureItem = document.createElement('div');
+            featureItem.className = 'feature-item';
+            featureItem.innerHTML = `
+                <input type="text" value="${text}" placeholder="New feature">
+                <button type="button" onclick="removeFeature(this)">-</button>
+            `;
+            document.getElementById('features-list').appendChild(featureItem);
+        }
+
+        function removeFeature(button) {
+            button.closest('.feature-item').remove();
+        }
+
+        function addBugfix(text = '') {
+            const bugfixItem = document.createElement('div');
+            bugfixItem.className = 'bugfix-item';
+            bugfixItem.innerHTML = `
+                <input type="text" value="${text}" placeholder="Bug fix">
+                <button type="button" onclick="removeBugfix(this)">-</button>
+            `;
+            document.getElementById('bugfixes-list').appendChild(bugfixItem);
+        }
+
+        function removeBugfix(button) {
+            button.closest('.bugfix-item').remove();
+        }
+
+        function displayVersionHistory(changelog) {
+            const versionList = document.getElementById('version-list');
+            versionList.innerHTML = '';
+
+            Object.entries(changelog).reverse().forEach(([version, data]) => {
+                const versionItem = document.createElement('div');
+                versionItem.className = 'version-item';
+                versionItem.innerHTML = `
+                    <h3>Version ${version}</h3>
+                    <p class="version-date">Released: ${data.date}</p>
+                    <ul>
+                        ${data.changes.map(change => `<li>${change}</li>`).join('')}
+                    </ul>
+                `;
+                versionList.appendChild(versionItem);
+            });
+        }
+
+        // Handle form submission
+        document.getElementById('version-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const versionData = {
+                version: document.getElementById('new-version').value,
+                minVersion: document.getElementById('min-version').value,
+                lastUpdated: new Date().toISOString().split('T')[0],
+                features: Array.from(document.querySelectorAll('#features-list input')).map(input => input.value),
+                bugfixes: Array.from(document.querySelectorAll('#bugfixes-list input')).map(input => input.value),
+                updateRequired: document.getElementById('force-update').checked,
+                maintenanceMode: document.getElementById('maintenance-mode').checked,
+                maintenanceMessage: document.getElementById('maintenance-message').value
+            };
+
+            try {
+                // In a real app, this would be an API call
+                console.log('New version data:', versionData);
+                alert('Version updated successfully!');
+            } catch (error) {
+                console.error('Error updating version:', error);
+                alert('Error updating version');
+            }
+        });
+    </script>
+</body>
+</html> 

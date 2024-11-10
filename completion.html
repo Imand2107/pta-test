@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Complete - Personal Fitness Trainer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="js/animations.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/voicePrompts.js"></script>
+    <script src="js/achievements.js"></script>
+</head>
+<body>
+    <div class="completion-container">
+        <div class="completion-header">
+            <h1>You've Completed Exercise!</h1>
+            <div class="confetti-animation">🎉</div>
+        </div>
+
+        <div class="workout-summary">
+            <h2 id="workout-name">Full Body Workout</h2>
+            
+            <div class="workout-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Duration</span>
+                    <span id="duration" class="stat-value">25 mins</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Exercises Completed</span>
+                    <span id="exercise-count" class="stat-value">8</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Calories Burned</span>
+                    <span id="calories-burned" class="stat-value">150</span>
+                </div>
+            </div>
+
+            <div class="achievements-section" id="new-achievements" style="display: none;">
+                <h3>🏆 Achievements Unlocked!</h3>
+                <div class="achievements-list">
+                    <!-- New achievements will be populated here -->
+                </div>
+            </div>
+
+            <div class="exercise-list">
+                <h3>Completed Exercises</h3>
+                <div id="completed-exercises">
+                    <!-- Will be populated with completed exercises -->
+                </div>
+            </div>
+
+            <div class="feedback-section">
+                <h3>How was your workout?</h3>
+                <div class="feedback-buttons">
+                    <button onclick="provideFeedback('too-easy')" class="feedback-btn">
+                        <span>😊</span>
+                        Too Easy
+                    </button>
+                    <button onclick="provideFeedback('good')" class="feedback-btn">
+                        <span>💪</span>
+                        Good
+                    </button>
+                    <button onclick="provideFeedback('too-hard')" class="feedback-btn">
+                        <span>😓</span>
+                        Too Hard
+                    </button>
+                </div>
+            </div>
+
+            <div class="motivation-message" id="motivation-message">
+                <!-- Will be populated with a motivational message -->
+            </div>
+
+            <button class="next-button" onclick="finishWorkout()">Finish Workout</button>
+        </div>
+    </div>
+
+    <script src="js/workoutTracker.js"></script>
+    <script>
+        const motivationalMessages = [
+            "Great job! Keep up the momentum! 💪",
+            "You're getting stronger every day! 🌟",
+            "One workout closer to your goals! 🎯",
+            "Amazing effort! Be proud of yourself! 🏆",
+            "You showed up and crushed it! 🔥"
+        ];
+
+        window.onload = function() {
+            audioManager.playSound('complete');
+            // Add entrance animations
+            UIAnimations.fadeIn(document.querySelector('.completion-container'));
+            UIAnimations.slideIn(document.querySelector('.workout-summary'), 'bottom');
+
+            // Get workout data from localStorage
+            const workoutData = JSON.parse(localStorage.getItem('currentWorkout') || '{}');
+            
+            // Calculate total duration
+            const startTime = new Date(workoutData.startTime);
+            const endTime = new Date();
+            const durationInMinutes = Math.round((endTime - startTime) / 60000);
+            
+            // Update stats with animations
+            setTimeout(() => {
+                UIAnimations.countUp(document.getElementById('duration'), durationInMinutes);
+                UIAnimations.countUp(document.getElementById('exercise-count'), workoutData.exercises.length);
+                UIAnimations.countUp(document.getElementById('calories-burned'), workoutData.totalCalories);
+            }, 500);
+
+            // Display completed exercises with animations
+            const exerciseList = document.getElementById('completed-exercises');
+            workoutData.exercises.forEach((exercise, index) => {
+                const exerciseItem = document.createElement('div');
+                exerciseItem.className = 'completed-exercise-item';
+                exerciseItem.innerHTML = `
+                    <span class="exercise-name">${exercise.name}</span>
+                    <span class="exercise-detail">
+                        ${exercise.type === 'reps' ? 
+                            `${exercise.reps} reps` : 
+                            `${exercise.duration} seconds`}
+                    </span>
+                `;
+                exerciseList.appendChild(exerciseItem);
+                
+                // Stagger the entrance of each exercise item
+                setTimeout(() => {
+                    UIAnimations.slideIn(exerciseItem, 'right');
+                }, index * 100);
+            });
+
+            // Check for new achievements
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userData = JSON.parse(localStorage.getItem(`userData_${currentUser.id}`));
+            const newAchievements = achievementTracker.checkAchievements(userData);
+
+            if (newAchievements.length > 0) {
+                const achievementsSection = document.getElementById('new-achievements');
+                const achievementsList = achievementsSection.querySelector('.achievements-list');
+
+                newAchievements.forEach(achievement => {
+                    const achievementElement = document.createElement('div');
+                    achievementElement.className = 'achievement-item';
+                    achievementElement.innerHTML = `
+                        <h4>${achievement.name}</h4>
+                        <p>${achievement.description}</p>
+                    `;
+                    achievementsList.appendChild(achievementElement);
+                });
+
+                // Show achievements section with animation
+                achievementsSection.style.display = 'block';
+                UIAnimations.slideIn(achievementsSection, 'bottom');
+
+                // Play achievement sound
+                audioManager.playSound('achievement');
+
+                // Update user's achievements
+                userData.achievements = [...(userData.achievements || []), ...newAchievements.map(a => a.id)];
+                localStorage.setItem(`userData_${currentUser.id}`, JSON.stringify(userData));
+            }
+
+            // Get motivational message based on progress
+            const currentLanguage = localStorage.getItem('language') || 'en';
+            const motivationalMessage = achievementTracker.getMotivationalMessage(userData, currentLanguage);
+            const messageEl = document.getElementById('motivation-message');
+            messageEl.textContent = motivationalMessage;
+            UIAnimations.fadeIn(messageEl);
+
+            // Announce completion
+            voicePromptManager.speakWorkoutComplete();
+        };
+
+        function provideFeedback(feedback) {
+            // Store feedback
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userFeedback = JSON.parse(localStorage.getItem(`feedback_${currentUser.id}`) || '[]');
+            
+            userFeedback.push({
+                date: new Date().toISOString(),
+                feedback: feedback
+            });
+            
+            localStorage.setItem(`feedback_${currentUser.id}`, JSON.stringify(userFeedback));
+
+            // Highlight selected button
+            document.querySelectorAll('.feedback-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.closest('.feedback-btn').classList.add('selected');
+
+            // Add animation to selected button
+            UIAnimations.pulse(event.target.closest('.feedback-btn'));
+        }
+
+        function finishWorkout() {
+            // Clear workout data
+            localStorage.removeItem('currentWorkout');
+            
+            // Redirect to home page
+            window.location.href = 'home.html';
+        }
+    </script>
+</body>
+</html> 
